@@ -55,7 +55,7 @@ const POSBilling = () => {
     }, []);
 
     const filteredProducts = products.filter(product =>
-        product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (product.name?.toLowerCase() || '').includes(searchQuery.toLowerCase()) ||
         product.barcode?.includes(searchQuery)
     );
 
@@ -177,17 +177,17 @@ const POSBilling = () => {
                         >
                             <div className="product-thumb">
                                 {product.image ? (
-                                    <img src={product.image} alt={product.name} />
+                                    <img src={product.image} alt={product.name || 'Product'} />
                                 ) : (
-                                    <span className="thumb-text">{product.name.charAt(0)}</span>
+                                    <span className="thumb-text">{(product.name || '?').charAt(0)}</span>
                                 )}
                             </div>
                             <div className="product-details">
-                                <span className="product-name">{product.name}</span>
+                                <span className="product-name">{product.name || 'Unknown Product'}</span>
                                 <div className="product-meta">
-                                    <span className="product-price">₹{product.price.toLocaleString()}</span>
-                                    <span className={`stock-info ${product.stock <= 5 ? 'low' : ''}`}>
-                                        {product.stock} left
+                                    <span className="product-price">₹{(product.price || 0).toLocaleString()}</span>
+                                    <span className={`stock-info ${(product.stock || 0) <= 5 ? 'low' : ''}`}>
+                                        {product.stock || 0} left
                                     </span>
                                 </div>
                             </div>

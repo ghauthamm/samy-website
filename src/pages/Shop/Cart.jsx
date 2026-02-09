@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { FiPlus, FiMinus, FiTrash2, FiArrowRight, FiShoppingBag, FiTag } from 'react-icons/fi';
 import { useCart } from '../../contexts/CartContext';
@@ -6,6 +6,7 @@ import './Cart.css';
 
 const Cart = () => {
     const { cartItems, updateQuantity, removeFromCart, getCartTotal, clearCart } = useCart();
+    const navigate = useNavigate();
 
     const subtotal = getCartTotal();
     const shipping = subtotal > 999 ? 0 : 99;
@@ -139,6 +140,7 @@ const Cart = () => {
 
                         <motion.button
                             className="checkout-btn"
+                            onClick={() => navigate('/checkout')}
                             whileHover={{ scale: 1.02 }}
                             whileTap={{ scale: 0.98 }}
                         >

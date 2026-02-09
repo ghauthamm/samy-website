@@ -34,6 +34,9 @@ import POSHistory from './pages/POS/POSHistory';
 import Home from './pages/Shop/Home';
 import ShopPage from './pages/Shop/ShopPage';
 import Cart from './pages/Shop/Cart';
+import MyOrders from './pages/Shop/MyOrders';
+import CheckoutPage from './pages/Checkout/CheckoutPage';
+import OrderSuccessPage from './pages/OrderSuccess/OrderSuccessPage';
 
 // Diagnostic Page
 import Diagnostic from './pages/Diagnostic';
@@ -114,10 +117,12 @@ function App() {
                 <Route index element={<Home />} />
                 <Route path="shop" element={<ShopPage />} />
                 <Route path="cart" element={<Cart />} />
+                <Route path="checkout" element={<CheckoutPage />} />
+                <Route path="order-success" element={<OrderSuccessPage />} />
                 <Route path="wishlist" element={<Cart />} />
                 <Route path="offers" element={<ShopPage />} />
                 <Route path="profile" element={<Home />} />
-                <Route path="orders" element={<Home />} />
+                <Route path="orders" element={<MyOrders />} />
               </Route>
             </Routes>
           </WishlistProvider>

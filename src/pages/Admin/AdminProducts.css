@@ -140,10 +140,12 @@
 .product-card {
     background: white;
     border-radius: 1rem;
-    overflow: hidden;
+    overflow: visible;
     border: 1px solid var(--gray-100);
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
     transition: all 0.3s;
+    display: flex;
+    flex-direction: column;
 }
 
 .product-card:hover {
@@ -159,6 +161,7 @@
     align-items: center;
     justify-content: center;
     overflow: hidden;
+    border-radius: 1rem 1rem 0 0;
 }
 
 .product-image img {
@@ -200,6 +203,9 @@
 
 .product-info {
     padding: 1rem;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
 }
 
 .product-category {
@@ -243,36 +249,51 @@
 
 .product-actions {
     display: flex;
-    border-top: 1px solid var(--gray-100);
+    border-top: 1px solid var(--gray-200);
+    background: linear-gradient(to bottom, var(--gray-50), white);
+    margin-top: auto;
+    border-radius: 0 0 1rem 1rem;
+    overflow: hidden;
 }
 
 .action-btn {
     flex: 1;
-    padding: 0.875rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 1rem;
     background: none;
     border: none;
-    font-size: 1.125rem;
+    font-size: 0.875rem;
+    font-weight: 600;
     cursor: pointer;
     transition: all 0.2s;
 }
 
+.action-btn svg {
+    font-size: 1.125rem;
+}
+
 .action-btn.edit {
-    color: var(--gray-600);
-    border-right: 1px solid var(--gray-100);
+    color: #3b82f6;
+    border-right: 1px solid var(--gray-200);
+    background: rgba(59, 130, 246, 0.05);
 }
 
 .action-btn.edit:hover {
-    background: var(--gray-50);
-    color: var(--primary-600);
+    background: rgba(59, 130, 246, 0.15);
+    color: #2563eb;
 }
 
 .action-btn.delete {
-    color: var(--gray-600);
+    color: #ef4444;
+    background: rgba(239, 68, 68, 0.05);
 }
 
 .action-btn.delete:hover {
-    background: rgba(239, 68, 68, 0.05);
-    color: var(--error);
+    background: rgba(239, 68, 68, 0.15);
+    color: #dc2626;
 }
 
 /* Modal */

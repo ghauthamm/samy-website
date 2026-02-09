@@ -1,0 +1,34 @@
+{
+    "rules": {
+        ".read": "auth != null",
+        ".write": "auth != null",
+        "products": {
+            ".indexOn": [
+                "category",
+                "name",
+                "price"
+            ],
+            "$productId": {
+                ".read": true,
+                ".write": "auth != null"
+            }
+        },
+        "orders": {
+            ".indexOn": [
+                "userId",
+                "createdAt",
+                "status"
+            ],
+            "$orderId": {
+                ".read": "auth != null",
+                ".write": "auth != null"
+            }
+        },
+        "users": {
+            "$userId": {
+                ".read": "auth != null && auth.uid == $userId",
+                ".write": "auth != null && auth.uid == $userId"
+            }
+        }
+    }
+}

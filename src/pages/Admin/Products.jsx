@@ -352,9 +352,11 @@ const Products = () => {
                             <div className="product-actions">
                                 <button className="action-btn edit" onClick={() => handleEdit(product)} title="Edit Product">
                                     <FiEdit2 />
+                                    <span>Edit</span>
                                 </button>
                                 <button className="action-btn delete" onClick={() => handleDeleteClick(product)} title="Delete Product">
                                     <FiTrash2 />
+                                    <span>Delete</span>
                                 </button>
                             </div>
                         </motion.div>
