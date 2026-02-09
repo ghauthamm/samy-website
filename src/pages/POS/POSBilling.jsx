@@ -2,13 +2,15 @@ import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     FiSearch, FiPlus, FiMinus, FiTrash2, FiCreditCard, FiDollarSign,
-    FiSmartphone, FiPrinter, FiX, FiCheck, FiPercent, FiShoppingCart
+    FiSmartphone, FiPrinter, FiX, FiCheck, FiPercent, FiShoppingCart, FiUser
 } from 'react-icons/fi';
 import { ref, onValue, push } from 'firebase/database';
 import { database } from '../../config/firebase';
+import { useAuth } from '../../contexts/AuthContext';
 import './POSBilling.css';
 
 const POSBilling = () => {
+    const { currentUser } = useAuth();
     const [products, setProducts] = useState([]);
     const [searchQuery, setSearchQuery] = useState('');
     const [cartItems, setCartItems] = useState([]);
@@ -18,6 +20,9 @@ const POSBilling = () => {
     const [showSuccessModal, setShowSuccessModal] = useState(false);
     const [invoiceNumber, setInvoiceNumber] = useState('');
     const searchRef = useRef(null);
+
+    // Get cashier name from logged-in user
+    const cashierName = currentUser?.displayName || currentUser?.email?.split('@')[0] || 'Cashier';
 
     // Demo products
     const demoProducts = [
@@ -122,6 +127,8 @@ const POSBilling = () => {
                 discount: getDiscountAmount(),
                 total: getTotal(),
                 paymentMethod,
+                cashier: cashierName,
+                userId: currentUser?.uid,
                 createdAt: new Date().toISOString()
             });
         } catch (error) {
@@ -130,6 +137,317 @@ const POSBilling = () => {
 
         setShowPaymentModal(false);
         setShowSuccessModal(true);
+    };
+
+    const handlePrintInvoice = () => {
+        const printWindow = window.open('', '_blank');
+        const currentDate = new Date().toLocaleString('en-IN', {
+            day: '2-digit',
+            month: 'short',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+
+        const invoiceHTML = `
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>Invoice ${invoiceNumber}</title>
+                <style>
+                    * {
+                        margin: 0;
+                        padding: 0;
+                        box-sizing: border-box;
+                    }
+                    
+                    body {
+                        font-family: 'Segoe UI', Arial, sans-serif;
+                        padding: 20mm;
+                        background: white;
+                        color: #333;
+                    }
+                    
+                    .invoice-container {
+                        max-width: 210mm;
+                        margin: 0 auto;
+                        background: white;
+                    }
+                    
+                    .header {
+                        display: flex;
+                        justify-content: space-between;
+                        align-items: start;
+                        margin-bottom: 30px;
+                        padding-bottom: 20px;
+                        border-bottom: 3px solid #667eea;
+                    }
+                    
+                    .company-info h1 {
+                        color: #667eea;
+                        font-size: 28px;
+                        margin-bottom: 5px;
+                    }
+                    
+                    .company-info p {
+                        color: #666;
+                        font-size: 12px;
+                        line-height: 1.6;
+                    }
+                    
+                    .invoice-meta {
+                        text-align: right;
+                    }
+                    
+                    .invoice-meta h2 {
+                        font-size: 24px;
+                        color: #333;
+                        margin-bottom: 10px;
+                    }
+                    
+                    .invoice-meta p {
+                        font-size: 12px;
+                        color: #666;
+                        margin: 3px 0;
+                    }
+                    
+                    .invoice-meta .invoice-number {
+                        font-weight: 700;
+                        color: #667eea;
+                        font-size: 14px;
+                    }
+                    
+                    .details-section {
+                        display: grid;
+                        grid-template-columns: 1fr 1fr;
+                        gap: 30px;
+                        margin: 30px 0;
+                    }
+                    
+                    .detail-box h3 {
+                        font-size: 12px;
+                        text-transform: uppercase;
+                        color: #999;
+                        margin-bottom: 10px;
+                        letter-spacing: 1px;
+                    }
+                    
+                    .detail-box p {
+                        font-size: 13px;
+                        line-height: 1.8;
+                        color: #333;
+                    }
+                    
+                    .items-table {
+                        width: 100%;
+                        border-collapse: collapse;
+                        margin: 30px 0;
+                    }
+                    
+                    .items-table thead {
+                        background: #f8f9fa;
+                    }
+                    
+                    .items-table th {
+                        padding: 12px 10px;
+                        text-align: left;
+                        font-size: 11px;
+                        text-transform: uppercase;
+                        letter-spacing: 0.5px;
+                        color: #666;
+                        font-weight: 600;
+                        border-bottom: 2px solid #667eea;
+                    }
+                    
+                    .items-table th:last-child,
+                    .items-table td:last-child {
+                        text-align: right;
+                    }
+                    
+                    .items-table tbody tr {
+                        border-bottom: 1px solid #eee;
+                    }
+                    
+                    .items-table td {
+                        padding: 15px 10px;
+                        font-size: 13px;
+                        color: #333;
+                    }
+                    
+                    .item-name {
+                        font-weight: 600;
+                        color: #333;
+                    }
+                    
+                    .totals-section {
+                        margin-top: 30px;
+                        display: flex;
+                        justify-content: flex-end;
+                    }
+                    
+                    .totals-table {
+                        width: 300px;
+                    }
+                    
+                    .totals-table tr td {
+                        padding: 10px 15px;
+                        font-size: 13px;
+                    }
+                    
+                    .totals-table tr td:first-child {
+                        color: #666;
+                        text-align: left;
+                    }
+                    
+                    .totals-table tr td:last-child {
+                        text-align: right;
+                        font-weight: 600;
+                        color: #333;
+                    }
+                    
+                    .totals-table tr.discount td {
+                        color: #10b981;
+                    }
+                    
+                    .totals-table tr.total {
+                        border-top: 2px solid #667eea;
+                        background: #f8f9fa;
+                    }
+                    
+                    .totals-table tr.total td {
+                        font-size: 16px;
+                        font-weight: 700;
+                        color: #667eea;
+                        padding: 15px;
+                    }
+                    
+                    .footer {
+                        margin-top: 50px;
+                        padding-top: 20px;
+                        border-top: 2px solid #eee;
+                        text-align: center;
+                    }
+                    
+                    .footer p {
+                        font-size: 11px;
+                        color: #999;
+                        margin: 5px 0;
+                    }
+                    
+                    .payment-badge {
+                        display: inline-block;
+                        padding: 5px 12px;
+                        background: #667eea;
+                        color: white;
+                        border-radius: 4px;
+                        font-size: 11px;
+                        font-weight: 600;
+                        text-transform: uppercase;
+                        letter-spacing: 0.5px;
+                    }
+                    
+                    @media print {
+                        body {
+                            padding: 0;
+                        }
+                        
+                        .invoice-container {
+                            box-shadow: none;
+                        }
+                        
+                        @page {
+                            margin: 15mm;
+                        }
+                    }
+                </style>
+            </head>
+            <body>
+                <div class="invoice-container">
+                    <!-- Header -->
+                    <div class="header">
+                        <div class="company-info">
+                            <h1>Samy Trends</h1>
+                            <p>123 Business Street, City Center</p>
+                            <p>Phone: +91 98765 43210</p>
+                            <p>Email: info@samytrends.com</p>
+                            <p>GSTIN: 29ABCDE1234F1Z5</p>
+                        </div>
+                        <div class="invoice-meta">
+                            <h2>INVOICE</h2>
+                            <p class="invoice-number">${invoiceNumber}</p>
+                            <p>Date: ${currentDate}</p>
+                            <p>Payment: <span class="payment-badge">${paymentMethod.toUpperCase()}</span></p>
+                            <p style="margin-top: 8px;">Cashier: <strong>${cashierName}</strong></p>
+                        </div>
+                    </div>
+                    
+                    <!-- Items Table -->
+                    <table class="items-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 50px;">#</th>
+                                <th>Item Description</th>
+                                <th style="width: 80px;">Qty</th>
+                                <th style="width: 100px;">Rate</th>
+                                <th style="width: 120px;">Amount</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${cartItems.map((item, index) => `
+                                <tr>
+                                    <td>${index + 1}</td>
+                                    <td class="item-name">${item.name || 'Unknown'}</td>
+                                    <td>${item.quantity || 0}</td>
+                                    <td>₹${(item.price || 0).toLocaleString('en-IN')}</td>
+                                    <td>₹${((item.price || 0) * (item.quantity || 0)).toLocaleString('en-IN')}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                    
+                    <!-- Totals -->
+                    <div class="totals-section">
+                        <table class="totals-table">
+                            <tr>
+                                <td>Subtotal:</td>
+                                <td>₹${getSubtotal().toLocaleString('en-IN')}</td>
+                            </tr>
+                            <tr>
+                                <td>Tax (GST 18%):</td>
+                                <td>₹${getTax().toLocaleString('en-IN')}</td>
+                            </tr>
+                            ${discount > 0 ? `
+                                <tr class="discount">
+                                    <td>Discount (${discount}%):</td>
+                                    <td>- ₹${getDiscountAmount().toLocaleString('en-IN')}</td>
+                                </tr>
+                            ` : ''}
+                            <tr class="total">
+                                <td>TOTAL:</td>
+                                <td>₹${getTotal().toLocaleString('en-IN')}</td>
+                            </tr>
+                        </table>
+                    </div>
+                    
+                    <!-- Footer -->
+                    <div class="footer">
+                        <p><strong>Thank you for your business!</strong></p>
+                        <p>This is a computer-generated invoice and does not require a signature.</p>
+                        <p>For any queries, please contact us at info@samytrends.com</p>
+                    </div>
+                </div>
+                
+                <script>
+                    window.onload = function() {
+                        window.print();
+                    }
+                </script>
+            </body>
+            </html>
+        `;
+
+        printWindow.document.write(invoiceHTML);
+        printWindow.document.close();
     };
 
     const handleNewSale = () => {
@@ -199,7 +517,13 @@ const POSBilling = () => {
             {/* Cart Panel */}
             <div className="cart-panel">
                 <div className="cart-header">
-                    <h2>Current Sale</h2>
+                    <div className="cart-title-group">
+                        <h2>Current Sale</h2>
+                        <div className="cashier-badge">
+                            <FiUser size={14} />
+                            <span>{cashierName}</span>
+                        </div>
+                    </div>
                     <span className="item-count">{cartItems.length} items</span>
                 </div>
 
@@ -390,6 +714,7 @@ const POSBilling = () => {
                             <div className="success-actions">
                                 <motion.button
                                     className="print-btn"
+                                    onClick={handlePrintInvoice}
                                     whileHover={{ scale: 1.02 }}
                                     whileTap={{ scale: 0.98 }}
                                 >
