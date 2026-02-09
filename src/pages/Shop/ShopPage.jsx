@@ -5,6 +5,7 @@ import { FiGrid, FiList, FiFilter, FiX, FiShoppingCart, FiHeart, FiChevronDown }
 import { ref, onValue } from 'firebase/database';
 import { database } from '../../config/firebase';
 import { useCart } from '../../contexts/CartContext';
+import { useWishlist } from '../../contexts/WishlistContext';
 import './ShopPage.css';
 
 const ShopPage = () => {
@@ -17,22 +18,23 @@ const ShopPage = () => {
     const [priceRange, setPriceRange] = useState([0, 50000]);
     const [sortBy, setSortBy] = useState('popularity');
     const { addToCart } = useCart();
+    const { toggleWishlist, isInWishlist } = useWishlist();
 
     const categories = ['All', 'Electronics', 'Clothing', 'Accessories', 'Sports', 'Home & Living', 'Beauty'];
 
     const demoProducts = [
-        { id: '1', name: 'Wireless Earbuds Pro', category: 'Electronics', price: 2999, originalPrice: 4999, rating: 4.8, reviews: 128 },
-        { id: '2', name: 'Smart Watch Elite', category: 'Electronics', price: 8999, originalPrice: 12999, rating: 4.6, reviews: 89 },
-        { id: '3', name: 'Designer Handbag', category: 'Accessories', price: 4599, originalPrice: 6999, rating: 4.9, reviews: 256 },
-        { id: '4', name: 'Premium Running Shoes', category: 'Sports', price: 3499, originalPrice: 4999, rating: 4.7, reviews: 178 },
-        { id: '5', name: 'Formal Cotton Shirt', category: 'Clothing', price: 1299, originalPrice: 1999, rating: 4.5, reviews: 67 },
-        { id: '6', name: 'LED Desk Lamp', category: 'Home & Living', price: 899, originalPrice: 1499, rating: 4.4, reviews: 43 },
-        { id: '7', name: 'Bluetooth Speaker', category: 'Electronics', price: 1599, originalPrice: 2499, rating: 4.6, reviews: 92 },
-        { id: '8', name: 'Leather Wallet', category: 'Accessories', price: 799, originalPrice: 1299, rating: 4.3, reviews: 35 },
-        { id: '9', name: 'Yoga Mat Premium', category: 'Sports', price: 999, originalPrice: 1499, rating: 4.7, reviews: 88 },
-        { id: '10', name: 'Casual Polo T-Shirt', category: 'Clothing', price: 699, originalPrice: 999, rating: 4.5, reviews: 124 },
-        { id: '11', name: 'Wireless Mouse', category: 'Electronics', price: 599, originalPrice: 999, rating: 4.4, reviews: 56 },
-        { id: '12', name: 'Sunglasses Classic', category: 'Accessories', price: 1499, originalPrice: 2499, rating: 4.6, reviews: 78 },
+        { id: '1', name: 'Wireless Earbuds Pro', category: 'Electronics', price: 2999, originalPrice: 4999, rating: 4.8, reviews: 128, image: 'https://images.unsplash.com/photo-1590658268037-6bf12165a8df?w=400&h=400&fit=crop' },
+        { id: '2', name: 'Smart Watch Elite', category: 'Electronics', price: 8999, originalPrice: 12999, rating: 4.6, reviews: 89, image: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400&h=400&fit=crop' },
+        { id: '3', name: 'Designer Handbag', category: 'Accessories', price: 4599, originalPrice: 6999, rating: 4.9, reviews: 256, image: 'https://images.unsplash.com/photo-1584917865442-de89df76afd3?w=400&h=400&fit=crop' },
+        { id: '4', name: 'Premium Running Shoes', category: 'Sports', price: 3499, originalPrice: 4999, rating: 4.7, reviews: 178, image: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400&h=400&fit=crop' },
+        { id: '5', name: 'Formal Cotton Shirt', category: 'Clothing', price: 1299, originalPrice: 1999, rating: 4.5, reviews: 67, image: 'https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?w=400&h=400&fit=crop' },
+        { id: '6', name: 'LED Desk Lamp', category: 'Home & Living', price: 899, originalPrice: 1499, rating: 4.4, reviews: 43, image: 'https://images.unsplash.com/photo-1507473885765-e6ed057f782c?w=400&h=400&fit=crop' },
+        { id: '7', name: 'Bluetooth Speaker', category: 'Electronics', price: 1599, originalPrice: 2499, rating: 4.6, reviews: 92, image: 'https://images.unsplash.com/photo-1608043152269-423dbba4e7e1?w=400&h=400&fit=crop' },
+        { id: '8', name: 'Leather Wallet', category: 'Accessories', price: 799, originalPrice: 1299, rating: 4.3, reviews: 35, image: 'https://images.unsplash.com/photo-1627123424574-724758594e93?w=400&h=400&fit=crop' },
+        { id: '9', name: 'Yoga Mat Premium', category: 'Sports', price: 999, originalPrice: 1499, rating: 4.7, reviews: 88, image: 'https://images.unsplash.com/photo-1601925260368-ae2f83cf8b7f?w=400&h=400&fit=crop' },
+        { id: '10', name: 'Casual Polo T-Shirt', category: 'Clothing', price: 699, originalPrice: 999, rating: 4.5, reviews: 124, image: 'https://images.unsplash.com/photo-1625910513413-5fc5f97f1703?w=400&h=400&fit=crop' },
+        { id: '11', name: 'Wireless Mouse', category: 'Electronics', price: 599, originalPrice: 999, rating: 4.4, reviews: 56, image: 'https://images.unsplash.com/photo-1527864550417-7fd91fc51a46?w=400&h=400&fit=crop' },
+        { id: '12', name: 'Sunglasses Classic', category: 'Accessories', price: 1499, originalPrice: 2499, rating: 4.6, reviews: 78, image: 'https://images.unsplash.com/photo-1572635196237-14b3f281503f?w=400&h=400&fit=crop' },
     ];
 
     useEffect(() => {
@@ -201,14 +203,21 @@ const ShopPage = () => {
                                     whileHover={{ y: -6 }}
                                 >
                                     <div className="product-image">
-                                        <div className="image-placeholder">📦</div>
+                                        {product.image ? (
+                                            <img src={product.image} alt={product.name} />
+                                        ) : (
+                                            <div className="image-placeholder">📦</div>
+                                        )}
                                         {product.originalPrice > product.price && (
                                             <span className="discount-badge">
                                                 -{Math.round((1 - product.price / product.originalPrice) * 100)}%
                                             </span>
                                         )}
                                         <div className="product-actions">
-                                            <button className="action-btn wishlist">
+                                            <button
+                                                className={`action-btn wishlist ${isInWishlist(product.id) ? 'active' : ''}`}
+                                                onClick={() => toggleWishlist(product)}
+                                            >
                                                 <FiHeart />
                                             </button>
                                             <button

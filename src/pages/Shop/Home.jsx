@@ -9,10 +9,10 @@ const Home = () => {
     const { addToCart } = useCart();
 
     const featuredProducts = [
-        { id: '1', name: 'Wireless Earbuds Pro', category: 'Electronics', price: 2999, originalPrice: 4999, image: null, rating: 4.8 },
-        { id: '2', name: 'Smart Watch Elite', category: 'Electronics', price: 8999, originalPrice: 12999, image: null, rating: 4.6 },
-        { id: '3', name: 'Designer Handbag', category: 'Accessories', price: 4599, originalPrice: 6999, image: null, rating: 4.9 },
-        { id: '4', name: 'Premium Running Shoes', category: 'Sports', price: 3499, originalPrice: 4999, image: null, rating: 4.7 },
+        { id: '1', name: 'Wireless Earbuds Pro', category: 'Electronics', price: 2999, originalPrice: 4999, image: 'https://images.unsplash.com/photo-1590658268037-6bf12165a8df?w=400&h=400&fit=crop', rating: 4.8 },
+        { id: '2', name: 'Smart Watch Elite', category: 'Electronics', price: 8999, originalPrice: 12999, image: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400&h=400&fit=crop', rating: 4.6 },
+        { id: '3', name: 'Designer Handbag', category: 'Accessories', price: 4599, originalPrice: 6999, image: 'https://images.unsplash.com/photo-1584917865442-de89df76afd3?w=400&h=400&fit=crop', rating: 4.9 },
+        { id: '4', name: 'Premium Running Shoes', category: 'Sports', price: 3499, originalPrice: 4999, image: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400&h=400&fit=crop', rating: 4.7 },
     ];
 
     const categories = [
@@ -228,9 +228,13 @@ const Home = () => {
                                 whileHover={{ y: -8 }}
                             >
                                 <div className="product-image">
-                                    <div className="image-placeholder">
-                                        <span>📦</span>
-                                    </div>
+                                    {product.image ? (
+                                        <img src={product.image} alt={product.name} />
+                                    ) : (
+                                        <div className="image-placeholder">
+                                            <span>📦</span>
+                                        </div>
+                                    )}
                                     <span className="discount-badge">
                                         -{Math.round((1 - product.price / product.originalPrice) * 100)}%
                                     </span>

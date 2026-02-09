@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     FiSearch, FiPlus, FiMinus, FiTrash2, FiCreditCard, FiDollarSign,
-    FiSmartphone, FiPrinter, FiX, FiCheck, FiPercent
+    FiSmartphone, FiPrinter, FiX, FiCheck, FiPercent, FiShoppingCart
 } from 'react-icons/fi';
 import { ref, onValue, push } from 'firebase/database';
 import { database } from '../../config/firebase';
@@ -176,7 +176,11 @@ const POSBilling = () => {
                             disabled={product.stock === 0}
                         >
                             <div className="product-thumb">
-                                <span className="thumb-text">{product.name.charAt(0)}</span>
+                                {product.image ? (
+                                    <img src={product.image} alt={product.name} />
+                                ) : (
+                                    <span className="thumb-text">{product.name.charAt(0)}</span>
+                                )}
                             </div>
                             <div className="product-details">
                                 <span className="product-name">{product.name}</span>

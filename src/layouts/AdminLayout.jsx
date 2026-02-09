@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
     FiGrid, FiPackage, FiShoppingCart, FiUsers, FiSettings,
     FiLogOut, FiChevronLeft, FiChevronRight, FiBell, FiSearch,
-    FiBarChart2, FiFileText, FiMenu, FiX
+    FiBarChart2, FiFileText, FiMenu, FiX, FiLayers
 } from 'react-icons/fi';
 import { useAuth } from '../contexts/AuthContext';
 import './AdminLayout.css';
@@ -28,6 +28,7 @@ const AdminLayout = () => {
         { path: '/admin', icon: FiGrid, label: 'Dashboard', end: true },
         { path: '/admin/products', icon: FiPackage, label: 'Products' },
         { path: '/admin/orders', icon: FiShoppingCart, label: 'Orders' },
+        { path: '/admin/stock', icon: FiLayers, label: 'Stock' },
         { path: '/admin/analytics', icon: FiBarChart2, label: 'Analytics' },
         { path: '/admin/users', icon: FiUsers, label: 'Users' },
         { path: '/admin/reports', icon: FiFileText, label: 'Reports' },

@@ -15,6 +15,23 @@ const Login = () => {
     const { login, loginWithGoogle, signup } = useAuth();
     const navigate = useNavigate();
 
+    const getUserRole = (email) => {
+        if (email === 'admin@samytrends.com') return 'admin';
+        if (email === 'cashier@samytrends.com') return 'cashier';
+        return 'user';
+    };
+
+    const navigateByRole = (email) => {
+        const role = getUserRole(email);
+        if (role === 'admin') {
+            navigate('/admin');
+        } else if (role === 'cashier') {
+            navigate('/pos');
+        } else {
+            navigate('/');
+        }
+    };
+
     const handleGoogleLogin = async () => {
         try {
             setError('');
@@ -33,8 +50,8 @@ const Login = () => {
 
         try {
             await login(email, password);
-            // Navigation will be handled by the auth state change
-            navigate('/');
+            // Navigate based on user role
+            navigateByRole(email);
         } catch (err) {
             setError('Invalid email or password. Please try again.');
         } finally {
@@ -171,12 +188,12 @@ const Login = () => {
                                     setPassword(pass);
                                     try {
                                         await login(email, pass);
-                                        navigate('/');
+                                        navigate('/admin');
                                     } catch (err) {
                                         if (err.code === 'auth/user-not-found' || err.code === 'auth/invalid-credential') {
                                             try {
                                                 await signup(email, pass, 'admin', { name: 'Admin User' });
-                                                navigate('/');
+                                                navigate('/admin');
                                             } catch (createErr) {
                                                 setError('Could not create demo admin. ' + createErr.message);
                                             }
@@ -197,12 +214,12 @@ const Login = () => {
                                     setPassword(pass);
                                     try {
                                         await login(email, pass);
-                                        navigate('/');
+                                        navigate('/pos');
                                     } catch (err) {
                                         if (err.code === 'auth/user-not-found' || err.code === 'auth/invalid-credential') {
                                             try {
                                                 await signup(email, pass, 'cashier', { name: 'Cashier User' });
-                                                navigate('/');
+                                                navigate('/pos');
                                             } catch (createErr) {
                                                 setError('Could not create demo cashier. ' + createErr.message);
                                             }
