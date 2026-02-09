@@ -220,14 +220,14 @@ const POSBilling = () => {
                                 exit={{ opacity: 0, x: -20 }}
                             >
                                 <div className="item-info">
-                                    <span className="item-name">{item.name}</span>
-                                    <span className="item-price">₹{item.price.toLocaleString()}</span>
+                                    <span className="item-name">{item.name || 'Unknown'}</span>
+                                    <span className="item-price">₹{(item.price || 0).toLocaleString()}</span>
                                 </div>
                                 <div className="item-controls">
                                     <button className="qty-btn" onClick={() => updateQuantity(item.id, -1)}>
                                         <FiMinus />
                                     </button>
-                                    <span className="qty-value">{item.quantity}</span>
+                                    <span className="qty-value">{item.quantity || 0}</span>
                                     <button className="qty-btn" onClick={() => updateQuantity(item.id, 1)}>
                                         <FiPlus />
                                     </button>
@@ -235,7 +235,7 @@ const POSBilling = () => {
                                         <FiTrash2 />
                                     </button>
                                 </div>
-                                <span className="item-total">₹{(item.price * item.quantity).toLocaleString()}</span>
+                                <span className="item-total">₹{((item.price || 0) * (item.quantity || 0)).toLocaleString()}</span>
                             </motion.div>
                         ))
                     )}
