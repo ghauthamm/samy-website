@@ -100,15 +100,15 @@ const Products = () => {
         try {
             let imageUrl = editingProduct?.image || '';
 
-            // Handle image upload (for Firebase mode)
-            if (imageFile && !isDemo) {
+            // Handle image upload (always try if we have storage config)
+            if (imageFile) {
                 try {
                     const imageRef = storageRef(storage, `products/${Date.now()}_${imageFile.name}`);
                     await uploadBytes(imageRef, imageFile);
                     imageUrl = await getDownloadURL(imageRef);
                 } catch (uploadError) {
                     console.error('Image upload error:', uploadError);
-                    // Use preview as fallback for demo
+                    // Use preview as fallback
                     imageUrl = imagePreview || editingProduct?.image || '';
                 }
             } else if (imagePreview) {
@@ -129,7 +129,7 @@ const Products = () => {
             if (editingProduct) {
                 // UPDATE operation
                 if (isDemo) {
-                    // Local update for demo mode
+                    // If we were in demo mode, update local state
                     setProducts(prev => prev.map(p =>
                         p.id === editingProduct.id ? { ...p, ...productData } : p
                     ));
@@ -138,18 +138,9 @@ const Products = () => {
                 }
                 showNotification('success', `Product "${productData.name}" updated successfully!`);
             } else {
-                // CREATE operation
+                // CREATE operation - ALWAYS save to Firebase
                 productData.createdAt = new Date().toISOString();
-                if (isDemo) {
-                    // Local create for demo mode
-                    const newProduct = {
-                        ...productData,
-                        id: `demo-${Date.now()}`
-                    };
-                    setProducts(prev => [...prev, newProduct]);
-                } else {
-                    await push(ref(database, 'products'), productData);
-                }
+                await push(ref(database, 'products'), productData);
                 showNotification('success', `Product "${productData.name}" added successfully!`);
             }
 
@@ -179,6 +170,26 @@ const Products = () => {
     const handleDeleteClick = (product) => {
         setProductToDelete(product);
         setShowDeleteModal(true);
+    };
+
+    const handleInitializeDatabase = async () => {
+        setSaving(true);
+        try {
+            const productsRef = ref(database, 'products');
+            for (const product of demoProducts) {
+                const { id, ...productData } = product;
+                productData.createdAt = new Date().toISOString();
+                productData.updatedAt = new Date().toISOString();
+                await push(productsRef, productData);
+            }
+            showNotification('success', 'Database initialized with demo products!');
+            setIsDemo(false);
+        } catch (error) {
+            console.error('Error initializing database:', error);
+            showNotification('error', 'Failed to initialize database.');
+        } finally {
+            setSaving(false);
+        }
     };
 
     const handleDeleteConfirm = async () => {
@@ -245,7 +256,17 @@ const Products = () => {
             <div className="products-header">
                 <div>
                     <h1>Products</h1>
-                    <p>Manage your product inventory {isDemo && <span className="demo-badge">Demo Mode</span>}</p>
+                    <div className="header-subtitle">
+                        <p>Manage your product inventory</p>
+                        {isDemo && (
+                            <div className="demo-notice">
+                                <span className="demo-badge">Preview Mode</span>
+                                <button className="init-db-btn" onClick={handleInitializeDatabase} disabled={saving}>
+                                    {saving ? 'Initializing...' : 'Initialize Store with Demo Data'}
+                                </button>
+                            </div>
+                        )}
+                    </div>
                 </div>
                 <motion.button
                     className="add-product-btn"
@@ -312,9 +333,11 @@ const Products = () => {
                     <FiImage className="no-products-icon" />
                     <h3>No Products Found</h3>
                     <p>Try adjusting your search or filters, or add a new product.</p>
-                    <button className="add-product-btn" onClick={() => setShowModal(true)}>
-                        <FiPlus /> Add Product
-                    </button>
+                    <div className="no-products-actions">
+                        <button className="add-product-btn" onClick={() => setShowModal(true)}>
+                            <FiPlus /> Add Product
+                        </button>
+                    </div>
                 </div>
             ) : (
                 <motion.div

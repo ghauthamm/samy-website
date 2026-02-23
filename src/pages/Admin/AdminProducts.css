@@ -758,3 +758,60 @@
 .delete-modal-actions .btn-delete:hover {
     box-shadow: 0 4px 14px rgba(239, 68, 68, 0.4);
 }
+
+/* Initialize Database Section */
+.header-subtitle {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.demo-notice {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.5rem;
+    background: rgba(220, 38, 38, 0.05);
+    border-radius: 0.5rem;
+    border: 1px dashed rgba(220, 38, 38, 0.2);
+}
+
+.demo-badge {
+    padding: 0.25rem 0.625rem;
+    background: rgba(220, 38, 38, 0.1);
+    color: var(--primary-600);
+    font-size: 0.75rem;
+    font-weight: 700;
+    border-radius: 2rem;
+    text-transform: uppercase;
+    letter-spacing: 0.025em;
+    margin: 0;
+}
+
+.init-db-btn {
+    padding: 0.375rem 0.875rem;
+    background: white;
+    border: 1px solid var(--primary-500);
+    color: var(--primary-600);
+    border-radius: 0.375rem;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.init-db-btn:hover:not(:disabled) {
+    background: var(--primary-500);
+    color: white;
+}
+
+.init-db-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.no-products-actions {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+}
