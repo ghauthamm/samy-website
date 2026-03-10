@@ -57,7 +57,11 @@ const Cart = () => {
                                     transition={{ delay: index * 0.1 }}
                                 >
                                     <div className="item-image">
-                                        <div className="image-placeholder">📦</div>
+                                        {item.image ? (
+                                            <img src={item.image} alt={item.name} />
+                                        ) : (
+                                            <div className="image-placeholder">📦</div>
+                                        )}
                                     </div>
                                     <div className="item-details">
                                         <span className="item-category">{item.category}</span>

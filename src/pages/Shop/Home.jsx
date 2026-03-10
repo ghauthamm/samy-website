@@ -2,27 +2,66 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { FiArrowRight, FiShoppingCart, FiTruck, FiShield, FiHeadphones } from 'react-icons/fi';
+import { ref, onValue } from 'firebase/database';
+import { database } from '../../config/firebase';
 import { useCart } from '../../contexts/CartContext';
 import './Home.css';
 
 const Home = () => {
     const { addToCart } = useCart();
+    const [featuredProducts, setFeaturedProducts] = useState([]);
+    const [categories, setCategories] = useState([]);
+    const [loading, setLoading] = useState(true);
 
-    const featuredProducts = [
-        { id: '1', name: 'Wireless Earbuds Pro', category: 'Electronics', price: 2999, originalPrice: 4999, image: 'https://images.unsplash.com/photo-1590658268037-6bf12165a8df?w=400&h=400&fit=crop', rating: 4.8 },
-        { id: '2', name: 'Smart Watch Elite', category: 'Electronics', price: 8999, originalPrice: 12999, image: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400&h=400&fit=crop', rating: 4.6 },
-        { id: '3', name: 'Designer Handbag', category: 'Accessories', price: 4599, originalPrice: 6999, image: 'https://images.unsplash.com/photo-1584917865442-de89df76afd3?w=400&h=400&fit=crop', rating: 4.9 },
-        { id: '4', name: 'Premium Running Shoes', category: 'Sports', price: 3499, originalPrice: 4999, image: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400&h=400&fit=crop', rating: 4.7 },
-    ];
+    const categoryMeta = {
+        'Electronics': { icon: '📱', color: '#3b82f6' },
+        'Clothing': { icon: '👕', color: '#8b5cf6' },
+        'Accessories': { icon: '👜', color: '#ec4899' },
+        'Sports': { icon: '⚽', color: '#22c55e' },
+        'Home & Living': { icon: '🏠', color: '#f59e0b' },
+        'Beauty': { icon: '💄', color: '#ef4444' },
+    };
 
-    const categories = [
-        { name: 'Electronics', icon: '📱', count: 120, color: '#3b82f6' },
-        { name: 'Clothing', icon: '👕', count: 250, color: '#8b5cf6' },
-        { name: 'Accessories', icon: '👜', count: 85, color: '#ec4899' },
-        { name: 'Sports', icon: '⚽', count: 65, color: '#22c55e' },
-        { name: 'Home & Living', icon: '🏠', count: 95, color: '#f59e0b' },
-        { name: 'Beauty', icon: '💄', count: 78, color: '#ef4444' },
-    ];
+    useEffect(() => {
+        const productsRef = ref(database, 'products');
+        const unsubscribe = onValue(productsRef, (snapshot) => {
+            const data = snapshot.val();
+            if (data) {
+                const allProducts = Object.entries(data).map(([id, product]) => ({
+                    id,
+                    ...product
+                }));
+
+                // Pick up to 4 featured products (newest first)
+                const sorted = [...allProducts].sort((a, b) =>
+                    new Date(b.createdAt || 0) - new Date(a.createdAt || 0)
+                );
+                setFeaturedProducts(sorted.slice(0, 4));
+
+                // Build dynamic category counts
+                const counts = {};
+                allProducts.forEach(p => {
+                    const cat = p.category || 'Other';
+                    counts[cat] = (counts[cat] || 0) + 1;
+                });
+                const catList = Object.entries(counts).map(([name, count]) => ({
+                    name,
+                    icon: categoryMeta[name]?.icon || '📦',
+                    color: categoryMeta[name]?.color || '#6b7280',
+                    count
+                }));
+                setCategories(catList);
+            } else {
+                setFeaturedProducts([]);
+                setCategories(Object.entries(categoryMeta).map(([name, meta]) => ({
+                    name, icon: meta.icon, color: meta.color, count: 0
+                })));
+            }
+            setLoading(false);
+        });
+
+        return () => unsubscribe();
+    }, []);
 
     const offers = [
         { title: 'Flash Sale', subtitle: 'Up to 60% OFF', bg: 'linear-gradient(135deg, #dc2626, #f97316)' },
@@ -160,7 +199,7 @@ const Home = () => {
                                         <span>{category.icon}</span>
                                     </div>
                                     <h3>{category.name}</h3>
-                                    <span className="product-count">{category.count} products</span>
+                                    <span className="product-count">{category.count} {category.count === 1 ? 'product' : 'products'}</span>
                                 </Link>
                             </motion.div>
                         ))}
@@ -220,7 +259,7 @@ const Home = () => {
                         whileInView="show"
                         viewport={{ once: true }}
                     >
-                        {featuredProducts.map((product) => (
+                        {featuredProducts.length > 0 ? featuredProducts.map((product) => (
                             <motion.div
                                 key={product.id}
                                 className="product-card"
@@ -235,9 +274,11 @@ const Home = () => {
                                             <span>📦</span>
                                         </div>
                                     )}
-                                    <span className="discount-badge">
-                                        -{Math.round((1 - product.price / product.originalPrice) * 100)}%
-                                    </span>
+                                    {product.originalPrice && product.originalPrice > product.price && (
+                                        <span className="discount-badge">
+                                            -{Math.round((1 - product.price / product.originalPrice) * 100)}%
+                                        </span>
+                                    )}
                                     <button
                                         className="quick-add"
                                         onClick={() => addToCart(product)}
@@ -248,17 +289,25 @@ const Home = () => {
                                 <div className="product-info">
                                     <span className="product-category">{product.category}</span>
                                     <h3 className="product-name">{product.name}</h3>
-                                    <div className="product-rating">
-                                        {'★'.repeat(Math.floor(product.rating))}
-                                        <span>{product.rating}</span>
-                                    </div>
+                                    {product.rating && (
+                                        <div className="product-rating">
+                                            {'★'.repeat(Math.floor(product.rating))}
+                                            <span>{product.rating}</span>
+                                        </div>
+                                    )}
                                     <div className="product-prices">
-                                        <span className="current-price">₹{product.price.toLocaleString()}</span>
-                                        <span className="original-price">₹{product.originalPrice.toLocaleString()}</span>
+                                        <span className="current-price">₹{product.price?.toLocaleString()}</span>
+                                        {product.originalPrice && product.originalPrice > product.price && (
+                                            <span className="original-price">₹{product.originalPrice.toLocaleString()}</span>
+                                        )}
                                     </div>
                                 </div>
                             </motion.div>
-                        ))}
+                        )) : (
+                            <div className="no-featured">
+                                <p>No products yet. Add products from the Admin panel!</p>
+                            </div>
+                        )}
                     </motion.div>
                 </div>
             </section>

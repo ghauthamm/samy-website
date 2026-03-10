@@ -25,6 +25,9 @@ import AdminUsers from './pages/Admin/Users';
 import AdminReports from './pages/Admin/Reports';
 import AdminSettings from './pages/Admin/Settings';
 import AdminStock from './pages/Admin/Stock';
+import AdminEmployees from './pages/Admin/Employees';
+import AdminMaintenance from './pages/Admin/Maintenance';
+import AdminAttendance from './pages/Admin/Attendance';
 
 // POS Pages
 import POSBilling from './pages/POS/POSBilling';
@@ -97,6 +100,9 @@ function App() {
                 <Route path="users" element={<AdminUsers />} />
                 <Route path="reports" element={<AdminReports />} />
                 <Route path="settings" element={<AdminSettings />} />
+                <Route path="employees" element={<AdminEmployees />} />
+                <Route path="maintenance" element={<AdminMaintenance />} />
+                <Route path="attendance" element={<AdminAttendance />} />
               </Route>
 
               {/* POS Routes */}

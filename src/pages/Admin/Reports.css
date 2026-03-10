@@ -263,6 +263,29 @@
     color: #059669;
 }
 
+.status-badge.warning {
+    background: rgba(245, 158, 11, 0.1);
+    color: #d97706;
+}
+
+.no-data-msg {
+    text-align: center;
+    color: var(--gray-500);
+    padding: 2rem 0;
+    font-size: 0.9375rem;
+}
+
+.reports-loading .skeleton {
+    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    background-size: 200% 100%;
+    animation: reports-shimmer 1.5s infinite;
+}
+
+@keyframes reports-shimmer {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+
 .quick-actions {
     background: white;
     border-radius: 0.75rem;

@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
     FiGrid, FiPackage, FiShoppingCart, FiUsers, FiSettings,
     FiLogOut, FiChevronLeft, FiChevronRight, FiBell, FiSearch,
-    FiBarChart2, FiFileText, FiMenu, FiX, FiLayers
+    FiBarChart2, FiFileText, FiMenu, FiX, FiLayers, FiUserCheck, FiTool, FiClipboard
 } from 'react-icons/fi';
 import { useAuth } from '../contexts/AuthContext';
 import './AdminLayout.css';
@@ -32,6 +32,9 @@ const AdminLayout = () => {
         { path: '/admin/analytics', icon: FiBarChart2, label: 'Analytics' },
         { path: '/admin/users', icon: FiUsers, label: 'Users' },
         { path: '/admin/reports', icon: FiFileText, label: 'Reports' },
+        { path: '/admin/employees', icon: FiUserCheck, label: 'Employees' },
+        { path: '/admin/maintenance', icon: FiTool, label: 'Maintenance' },
+        { path: '/admin/attendance', icon: FiClipboard, label: 'Attendance' },
         { path: '/admin/settings', icon: FiSettings, label: 'Settings' },
     ];
 
@@ -110,15 +113,6 @@ const AdminLayout = () => {
                             <FiBell />
                             <span className="notification-badge">3</span>
                         </button>
-                        <div className="user-menu">
-                            <div className="user-avatar">
-                                {currentUser?.email?.charAt(0).toUpperCase() || 'A'}
-                            </div>
-                            <div className="user-info hide-mobile">
-                                <span className="user-name">Admin</span>
-                                <span className="user-role">Administrator</span>
-                            </div>
-                        </div>
                     </div>
                 </header>
 

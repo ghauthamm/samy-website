@@ -337,6 +337,51 @@
     color: #059669;
 }
 
+.growth-badge.negative {
+    background: rgba(239, 68, 68, 0.1);
+    color: #dc2626;
+}
+
+.no-data-text {
+    text-align: center;
+    color: var(--gray-500);
+    padding: 2rem 0;
+    font-size: 0.9375rem;
+}
+
+/* Loading skeleton */
+.analytics-loading {
+    padding: 0;
+}
+
+.skeleton-stats-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 1.25rem;
+    margin-bottom: 1.5rem;
+}
+
+.skeleton-card {
+    height: 120px;
+    border-radius: 0.75rem;
+}
+
+.skeleton-chart {
+    height: 350px;
+    border-radius: 0.75rem;
+}
+
+.skeleton {
+    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+}
+
+@keyframes shimmer {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+
 @media (max-width: 1024px) {
     .charts-grid {
         grid-template-columns: 1fr;

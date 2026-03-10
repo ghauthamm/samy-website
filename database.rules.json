@@ -3,15 +3,13 @@
         ".read": "auth != null",
         ".write": "auth != null",
         "products": {
+            ".read": true,
+            ".write": "auth != null",
             ".indexOn": [
                 "category",
                 "name",
                 "price"
-            ],
-            "$productId": {
-                ".read": true,
-                ".write": "auth != null"
-            }
+            ]
         },
         "orders": {
             ".indexOn": [
@@ -29,6 +27,20 @@
                 ".read": "auth != null && auth.uid == $userId",
                 ".write": "auth != null && auth.uid == $userId"
             }
+        },
+        "employees": {
+            ".read": "auth != null",
+            ".write": "auth != null",
+            ".indexOn": ["department", "name", "status"]
+        },
+        "maintenance": {
+            ".read": "auth != null",
+            ".write": "auth != null",
+            ".indexOn": ["status", "category", "priority"]
+        },
+        "attendance": {
+            ".read": "auth != null",
+            ".write": "auth != null"
         }
     }
 }

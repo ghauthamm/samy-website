@@ -330,6 +330,14 @@
     flex-shrink: 0;
 }
 
+.product-thumb-img {
+    width: 36px;
+    height: 36px;
+    border-radius: 0.5rem;
+    object-fit: cover;
+    flex-shrink: 0;
+}
+
 .revenue,
 .amount {
     font-weight: 600;

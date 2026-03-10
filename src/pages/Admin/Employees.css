@@ -1,0 +1,102 @@
+.admin-employees { display: flex; flex-direction: column; gap: 1.5rem; }
+
+.emp-header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; }
+.emp-header h1 { font-size: 1.75rem; font-weight: 700; color: var(--gray-900); margin-bottom: 0.25rem; }
+.emp-header p { color: var(--gray-500); font-size: 0.9375rem; }
+.emp-add-btn { display: flex; align-items: center; gap: 0.5rem; padding: 0.75rem 1.5rem; background: linear-gradient(135deg, var(--primary-600), var(--primary-500)); color: white; font-weight: 600; border-radius: 0.75rem; box-shadow: 0 4px 14px rgba(220,38,38,0.3); border: none; cursor: pointer; transition: all 0.2s; }
+.emp-add-btn:hover { box-shadow: 0 6px 20px rgba(220,38,38,0.4); }
+
+.emp-filters { display: flex; gap: 1rem; flex-wrap: wrap; }
+.emp-search { position: relative; flex: 1; min-width: 200px; max-width: 350px; }
+.emp-search input { width: 100%; padding: 0.75rem 1rem 0.75rem 2.75rem; background: white; border: 1.5px solid var(--gray-200); border-radius: 0.75rem; font-size: 0.9375rem; transition: all 0.2s; }
+.emp-search input:focus { border-color: var(--primary-500); box-shadow: 0 0 0 3px rgba(220,38,38,0.1); }
+.emp-search .search-icon { position: absolute; left: 1rem; top: 50%; transform: translateY(-50%); color: var(--gray-400); pointer-events: none; }
+.emp-filters select { padding: 0.75rem 1rem; background: white; border: 1.5px solid var(--gray-200); border-radius: 0.75rem; font-size: 0.9375rem; min-width: 180px; }
+.emp-filters select:focus { border-color: var(--primary-500); box-shadow: 0 0 0 3px rgba(220,38,38,0.1); }
+
+.emp-stats { display: flex; gap: 1.25rem; flex-wrap: wrap; }
+.emp-stat { display: flex; flex-direction: column; gap: 0.25rem; padding: 1rem 1.5rem; background: white; border-radius: 0.75rem; border: 1px solid var(--gray-200); min-width: 140px; }
+.emp-stat-num { font-size: 1.5rem; font-weight: 700; color: var(--gray-900); }
+.emp-stat.warning .emp-stat-num { color: var(--warning); }
+.emp-stat-label { font-size: 0.8125rem; color: var(--gray-500); }
+
+.emp-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1.25rem; }
+.emp-grid.loading { opacity: 0.5; }
+.emp-card-skeleton { height: 280px; border-radius: 1rem; background: var(--gray-100); }
+
+.emp-card { background: white; border-radius: 1rem; border: 1px solid var(--gray-100); box-shadow: 0 1px 3px rgba(0,0,0,0.05); transition: all 0.3s; display: flex; flex-direction: column; overflow: hidden; }
+.emp-card:hover { box-shadow: 0 10px 30px rgba(0,0,0,0.1); transform: translateY(-4px); }
+
+.emp-card-header { display: flex; align-items: center; justify-content: space-between; padding: 1.25rem 1.25rem 0.75rem; }
+.emp-avatar { width: 48px; height: 48px; border-radius: 50%; background: linear-gradient(135deg, var(--primary-500), var(--primary-600)); color: white; display: flex; align-items: center; justify-content: center; font-size: 1.25rem; font-weight: 700; }
+.emp-status-badge { padding: 0.25rem 0.75rem; border-radius: 2rem; font-size: 0.6875rem; font-weight: 600; text-transform: uppercase; }
+.emp-status-badge.active { background: rgba(34,197,94,0.1); color: #16a34a; }
+.emp-status-badge.inactive { background: rgba(239,68,68,0.1); color: #dc2626; }
+
+.emp-card-body { padding: 0 1.25rem 1rem; flex: 1; }
+.emp-card-body h3 { font-size: 1.125rem; font-weight: 600; color: var(--gray-900); margin-bottom: 0.125rem; }
+.emp-designation { font-size: 0.8125rem; color: var(--primary-600); font-weight: 500; display: block; margin-bottom: 0.75rem; }
+.emp-detail { display: flex; align-items: center; gap: 0.5rem; font-size: 0.8125rem; color: var(--gray-500); margin-bottom: 0.375rem; }
+.emp-detail svg { font-size: 0.875rem; color: var(--gray-400); flex-shrink: 0; }
+.emp-salary { margin-top: 0.75rem; font-size: 1.125rem; font-weight: 700; color: var(--gray-900); }
+
+.emp-card-actions { display: flex; border-top: 1px solid var(--gray-200); margin-top: auto; }
+.emp-action-btn { flex: 1; display: flex; align-items: center; justify-content: center; gap: 0.5rem; padding: 0.875rem; background: none; border: none; font-size: 0.875rem; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+.emp-action-btn.edit { color: #3b82f6; border-right: 1px solid var(--gray-200); }
+.emp-action-btn.edit:hover { background: rgba(59,130,246,0.1); }
+.emp-action-btn.delete { color: #ef4444; }
+.emp-action-btn.delete:hover { background: rgba(239,68,68,0.1); }
+
+.emp-empty { display: flex; flex-direction: column; align-items: center; padding: 4rem 2rem; background: white; border-radius: 1rem; text-align: center; }
+.emp-empty-icon { font-size: 4rem; color: var(--gray-300); margin-bottom: 1rem; }
+.emp-empty h3 { font-size: 1.25rem; color: var(--gray-900); margin-bottom: 0.5rem; }
+.emp-empty p { color: var(--gray-500); }
+
+/* Notification */
+.emp-notification { position: fixed; top: 1.5rem; left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 0.5rem; padding: 1rem 1.5rem; border-radius: 0.75rem; font-weight: 600; z-index: 2000; box-shadow: 0 10px 40px rgba(0,0,0,0.2); }
+.emp-notification.success { background: linear-gradient(135deg, #22c55e, #16a34a); color: white; }
+.emp-notification.error { background: linear-gradient(135deg, #ef4444, #dc2626); color: white; }
+
+/* Modal */
+.emp-modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 1000; padding: 1rem; backdrop-filter: blur(4px); }
+.emp-modal { background: white; border-radius: 1rem; width: 100%; max-width: 650px; max-height: 90vh; overflow-y: auto; }
+.emp-modal-header { display: flex; justify-content: space-between; align-items: center; padding: 1.5rem; border-bottom: 1px solid var(--gray-200); }
+.emp-modal-header h2 { font-size: 1.25rem; font-weight: 600; color: var(--gray-900); }
+.emp-close-btn { width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; background: var(--gray-100); border: none; border-radius: 0.5rem; color: var(--gray-600); cursor: pointer; }
+.emp-close-btn:hover { background: var(--gray-200); }
+
+.emp-form { padding: 1.5rem; }
+.emp-form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+.emp-form-group { display: flex; flex-direction: column; gap: 0.375rem; }
+.emp-form-group.full-width { grid-column: 1 / -1; }
+.emp-form-group label { font-size: 0.875rem; font-weight: 600; color: var(--gray-700); }
+.emp-form-group input, .emp-form-group select, .emp-form-group textarea { padding: 0.75rem 1rem; background: white; border: 1.5px solid var(--gray-200); border-radius: 0.5rem; font-size: 0.9375rem; transition: all 0.2s; }
+.emp-form-group input:focus, .emp-form-group select:focus, .emp-form-group textarea:focus { border-color: var(--primary-500); box-shadow: 0 0 0 3px rgba(220,38,38,0.1); outline: none; }
+.emp-form-group textarea { resize: vertical; }
+
+.emp-modal-footer { display: flex; justify-content: flex-end; gap: 0.75rem; padding-top: 1.5rem; border-top: 1px solid var(--gray-200); margin-top: 1.5rem; }
+.emp-btn-cancel { padding: 0.75rem 1.5rem; background: var(--gray-100); border: none; border-radius: 0.5rem; font-size: 0.9375rem; font-weight: 600; color: var(--gray-700); cursor: pointer; }
+.emp-btn-cancel:hover { background: var(--gray-200); }
+.emp-btn-submit { display: flex; align-items: center; gap: 0.5rem; padding: 0.75rem 1.5rem; background: linear-gradient(135deg, var(--primary-600), var(--primary-500)); color: white; border: none; border-radius: 0.5rem; font-size: 0.9375rem; font-weight: 600; cursor: pointer; }
+.emp-btn-submit:hover { box-shadow: 0 4px 14px rgba(220,38,38,0.3); }
+.emp-btn-submit:disabled { opacity: 0.7; cursor: not-allowed; }
+
+/* Delete Modal */
+.emp-delete-modal { max-width: 400px; }
+.emp-delete-content { padding: 2rem; text-align: center; }
+.emp-delete-icon { width: 64px; height: 64px; margin: 0 auto 1.5rem; background: rgba(239,68,68,0.1); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.75rem; color: #ef4444; }
+.emp-delete-content h3 { font-size: 1.25rem; color: var(--gray-900); margin-bottom: 0.75rem; }
+.emp-delete-content p { color: var(--gray-600); margin-bottom: 0.5rem; }
+.emp-delete-content .warning-text { font-size: 0.8125rem; color: #ef4444; }
+.emp-delete-actions { display: flex; gap: 0.75rem; margin-top: 1.5rem; justify-content: center; }
+.emp-btn-delete { display: flex; align-items: center; gap: 0.5rem; padding: 0.75rem 1.5rem; background: linear-gradient(135deg, #ef4444, #dc2626); color: white; border: none; border-radius: 0.5rem; font-weight: 600; cursor: pointer; }
+.emp-btn-delete:hover { box-shadow: 0 4px 14px rgba(239,68,68,0.3); }
+
+.spinner { width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.3); border-top-color: white; border-radius: 50%; animation: spin 0.8s linear infinite; }
+@keyframes empspin { to { transform: rotate(360deg); } }
+
+@media (max-width: 768px) {
+    .emp-form-grid { grid-template-columns: 1fr; }
+    .emp-filters { flex-direction: column; }
+    .emp-search { max-width: none; }
+}

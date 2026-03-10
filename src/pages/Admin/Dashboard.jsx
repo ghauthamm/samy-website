@@ -2,86 +2,161 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import {
     FiDollarSign, FiShoppingBag, FiAlertTriangle, FiUsers,
-    FiTrendingUp, FiTrendingDown, FiMoreVertical, FiArrowUpRight
+    FiTrendingUp, FiTrendingDown, FiMoreVertical, FiArrowUpRight,
+    FiPackage, FiUserCheck
 } from 'react-icons/fi';
 import { LineChart, Line, AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+import { ref, onValue } from 'firebase/database';
+import { database } from '../../config/firebase';
 import './AdminDashboard.css';
 
 const AdminDashboard = () => {
     const [loading, setLoading] = useState(true);
+    const [products, setProducts] = useState([]);
+    const [orders, setOrders] = useState([]);
+    const [employees, setEmployees] = useState([]);
+    const [attendance, setAttendance] = useState({});
 
     useEffect(() => {
-        // Simulate loading
-        setTimeout(() => setLoading(false), 1000);
+        let loaded = 0;
+        const checkDone = () => { loaded++; if (loaded >= 4) setLoading(false); };
+
+        const unsub1 = onValue(ref(database, 'products'), (snap) => {
+            const data = snap.val();
+            setProducts(data ? Object.entries(data).map(([id, p]) => ({ id, ...p })) : []);
+            checkDone();
+        }, () => checkDone());
+
+        const unsub2 = onValue(ref(database, 'orders'), (snap) => {
+            const data = snap.val();
+            setOrders(data ? Object.entries(data).map(([id, o]) => ({ id, ...o })) : []);
+            checkDone();
+        }, () => checkDone());
+
+        const unsub3 = onValue(ref(database, 'employees'), (snap) => {
+            const data = snap.val();
+            setEmployees(data ? Object.entries(data).map(([id, e]) => ({ id, ...e })) : []);
+            checkDone();
+        }, () => checkDone());
+
+        const unsub4 = onValue(ref(database, 'attendance'), (snap) => {
+            setAttendance(snap.val() || {});
+            checkDone();
+        }, () => checkDone());
+
+        return () => { unsub1(); unsub2(); unsub3(); unsub4(); };
     }, []);
+
+    // Computed stats
+    const totalSales = orders.reduce((sum, o) => sum + (o.totalAmount || o.total || 0), 0);
+    const totalOrders = orders.length;
+    const lowStockItems = products.filter(p => (p.stock || 0) <= 10).length;
+    const activeEmployees = employees.filter(e => e.status === 'active').length;
+    const totalProducts = products.length;
+
+    // Today's attendance
+    const todayKey = new Date().toISOString().split('T')[0].replace(/-/g, '');
+    const todayAtt = attendance[todayKey] || {};
+    const presentToday = Object.values(todayAtt).filter(a => a.status === 'present').length;
 
     const stats = [
         {
             title: 'Total Sales',
-            value: '₹2,45,890',
-            change: '+12.5%',
+            value: `₹${totalSales.toLocaleString()}`,
+            change: `${totalOrders} orders`,
             trend: 'up',
             icon: FiDollarSign,
             color: 'green'
         },
         {
-            title: 'Total Orders',
-            value: '1,284',
-            change: '+8.2%',
-            trend: 'up',
-            icon: FiShoppingBag,
+            title: 'Total Products',
+            value: totalProducts.toString(),
+            change: `${lowStockItems} low stock`,
+            trend: lowStockItems > 5 ? 'down' : 'up',
+            icon: FiPackage,
             color: 'blue'
         },
         {
             title: 'Low Stock Items',
-            value: '23',
-            change: '-5%',
-            trend: 'down',
+            value: lowStockItems.toString(),
+            change: lowStockItems === 0 ? 'All stocked' : 'Needs attention',
+            trend: lowStockItems > 0 ? 'down' : 'up',
             icon: FiAlertTriangle,
             color: 'orange'
         },
         {
-            title: 'Active Users',
-            value: '3,421',
-            change: '+15.3%',
+            title: 'Employees',
+            value: activeEmployees.toString(),
+            change: `${presentToday} present today`,
             trend: 'up',
-            icon: FiUsers,
+            icon: FiUserCheck,
             color: 'purple'
         },
     ];
 
-    const salesData = [
-        { name: 'Jan', sales: 12000, orders: 120 },
-        { name: 'Feb', sales: 19000, orders: 180 },
-        { name: 'Mar', sales: 15000, orders: 150 },
-        { name: 'Apr', sales: 25000, orders: 230 },
-        { name: 'May', sales: 22000, orders: 210 },
-        { name: 'Jun', sales: 30000, orders: 280 },
-        { name: 'Jul', sales: 28000, orders: 260 },
-    ];
+    // Category breakdown from products
+    const catCounts = {};
+    products.forEach(p => {
+        const cat = p.category || 'Other';
+        catCounts[cat] = (catCounts[cat] || 0) + 1;
+    });
+    const catColors = { 'Electronics': '#dc2626', 'Clothing': '#3b82f6', 'Accessories': '#22c55e', 'Sports': '#f59e0b', 'Home & Living': '#8b5cf6', 'Beauty': '#ec4899' };
+    const categoryData = Object.entries(catCounts).map(([name, count]) => ({
+        name,
+        value: totalProducts > 0 ? Math.round((count / totalProducts) * 100) : 0,
+        color: catColors[name] || '#6b7280'
+    }));
 
-    const categoryData = [
-        { name: 'Electronics', value: 35, color: '#dc2626' },
-        { name: 'Clothing', value: 30, color: '#3b82f6' },
-        { name: 'Accessories', value: 20, color: '#22c55e' },
-        { name: 'Home & Living', value: 15, color: '#f59e0b' },
-    ];
+    // Sales data by month from orders
+    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const salesByMonth = {};
+    orders.forEach(o => {
+        const d = new Date(o.createdAt || o.date || Date.now());
+        const key = `${d.getFullYear()}-${d.getMonth()}`;
+        if (!salesByMonth[key]) salesByMonth[key] = { sales: 0, orders: 0, month: d.getMonth(), year: d.getFullYear() };
+        salesByMonth[key].sales += (o.totalAmount || o.total || 0);
+        salesByMonth[key].orders += 1;
+    });
+    const salesData = Object.values(salesByMonth)
+        .sort((a, b) => a.year - b.year || a.month - b.month)
+        .slice(-7)
+        .map(m => ({ name: monthNames[m.month], sales: m.sales, orders: m.orders }));
 
-    const topProducts = [
-        { id: 1, name: 'Wireless Earbuds Pro', sales: 234, revenue: '₹46,800', growth: '+23%' },
-        { id: 2, name: 'Smart Watch Elite', sales: 189, revenue: '₹75,600', growth: '+18%' },
-        { id: 3, name: 'Designer Handbag', sales: 156, revenue: '₹93,600', growth: '+12%' },
-        { id: 4, name: 'Running Shoes Max', sales: 145, revenue: '₹43,500', growth: '+8%' },
-        { id: 5, name: 'Premium Sunglasses', sales: 132, revenue: '₹39,600', growth: '+5%' },
-    ];
+    // Top products by stock (or could be by orders if tracked)
+    const topProducts = [...products]
+        .sort((a, b) => (b.price || 0) * (b.stock || 0) - (a.price || 0) * (a.stock || 0))
+        .slice(0, 5)
+        .map(p => ({
+            id: p.id,
+            name: p.name || 'Untitled',
+            image: p.image || '',
+            stock: p.stock || 0,
+            revenue: `₹${((p.price || 0) * (p.stock || 0)).toLocaleString()}`,
+            price: `₹${(p.price || 0).toLocaleString()}`
+        }));
 
-    const recentOrders = [
-        { id: '#ORD-2847', customer: 'Rahul Sharma', amount: '₹2,450', status: 'Completed', date: '10 min ago' },
-        { id: '#ORD-2846', customer: 'Priya Patel', amount: '₹1,890', status: 'Processing', date: '25 min ago' },
-        { id: '#ORD-2845', customer: 'Amit Kumar', amount: '₹3,220', status: 'Pending', date: '1 hour ago' },
-        { id: '#ORD-2844', customer: 'Sneha Reddy', amount: '₹5,670', status: 'Completed', date: '2 hours ago' },
-        { id: '#ORD-2843', customer: 'Vikash Singh', amount: '₹890', status: 'Shipped', date: '3 hours ago' },
-    ];
+    // Recent orders (newest first)
+    const recentOrders = [...orders]
+        .sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))
+        .slice(0, 5)
+        .map(o => ({
+            id: o.orderId || `#${o.id.slice(-6).toUpperCase()}`,
+            customer: o.customerName || o.shippingAddress?.name || 'Customer',
+            amount: `₹${(o.totalAmount || o.total || 0).toLocaleString()}`,
+            status: o.status || 'Pending',
+            date: o.createdAt ? getTimeAgo(o.createdAt) : 'N/A'
+        }));
+
+    function getTimeAgo(dateStr) {
+        const diff = Date.now() - new Date(dateStr).getTime();
+        const mins = Math.floor(diff / 60000);
+        if (mins < 1) return 'Just now';
+        if (mins < 60) return `${mins} min ago`;
+        const hrs = Math.floor(mins / 60);
+        if (hrs < 24) return `${hrs}h ago`;
+        const days = Math.floor(hrs / 24);
+        return `${days}d ago`;
+    }
 
     const containerVariants = {
         hidden: { opacity: 0 },
@@ -266,25 +341,29 @@ const AdminDashboard = () => {
                             <thead>
                                 <tr>
                                     <th>Product</th>
-                                    <th>Sales</th>
-                                    <th>Revenue</th>
-                                    <th>Growth</th>
+                                    <th>Price</th>
+                                    <th>Stock</th>
+                                    <th>Value</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                {topProducts.map((product) => (
+                                {topProducts.length > 0 ? topProducts.map((product) => (
                                     <tr key={product.id}>
                                         <td className="product-cell">
-                                            <div className="product-thumb"></div>
+                                            {product.image ? (
+                                                <img src={product.image} alt={product.name} className="product-thumb-img" />
+                                            ) : (
+                                                <div className="product-thumb"></div>
+                                            )}
                                             <span>{product.name}</span>
                                         </td>
-                                        <td>{product.sales}</td>
+                                        <td>{product.price}</td>
+                                        <td>{product.stock}</td>
                                         <td className="revenue">{product.revenue}</td>
-                                        <td>
-                                            <span className="growth-badge positive">{product.growth}</span>
-                                        </td>
                                     </tr>
-                                ))}
+                                )) : (
+                                    <tr><td colSpan="4" style={{ textAlign: 'center', color: '#9ca3af', padding: '2rem' }}>No products yet</td></tr>
+                                )}
                             </tbody>
                         </table>
                     </div>
@@ -308,7 +387,7 @@ const AdminDashboard = () => {
                                 </tr>
                             </thead>
                             <tbody>
-                                {recentOrders.map((order) => (
+                                {recentOrders.length > 0 ? recentOrders.map((order) => (
                                     <tr key={order.id}>
                                         <td className="order-id">{order.id}</td>
                                         <td>{order.customer}</td>
@@ -319,7 +398,9 @@ const AdminDashboard = () => {
                                             </span>
                                         </td>
                                     </tr>
-                                ))}
+                                )) : (
+                                    <tr><td colSpan="4" style={{ textAlign: 'center', color: '#9ca3af', padding: '2rem' }}>No orders yet</td></tr>
+                                )}
                             </tbody>
                         </table>
                     </div>

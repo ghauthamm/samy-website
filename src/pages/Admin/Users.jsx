@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     FiSearch, FiFilter, FiUserPlus, FiEdit2, FiTrash2, FiMail,
@@ -10,6 +10,7 @@ import './Users.css';
 
 const Users = () => {
     const [users, setUsers] = useState([]);
+    const [orders, setOrders] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
     const [roleFilter, setRoleFilter] = useState('all');
@@ -25,8 +26,10 @@ const Users = () => {
     });
 
     useEffect(() => {
-        const usersRef = ref(database, 'users');
-        const unsubscribe = onValue(usersRef, (snapshot) => {
+        let loaded = 0;
+        const checkDone = () => { loaded++; if (loaded >= 2) setLoading(false); };
+
+        const unsub1 = onValue(ref(database, 'users'), (snapshot) => {
             const data = snapshot.val();
             if (data) {
                 const userList = Object.entries(data).map(([id, user]) => ({
@@ -35,85 +38,47 @@ const Users = () => {
                 }));
                 setUsers(userList);
             } else {
-                // Demo users
-                setUsers([
-                    {
-                        id: '1',
-                        name: 'Admin User',
-                        email: 'admin@samytrends.com',
-                        phone: '+91 98765 00001',
-                        role: 'admin',
-                        address: '123 Admin Street, Bangalore',
-                        status: 'active',
-                        createdAt: '2026-01-01T10:00:00',
-                        lastLogin: '2026-02-07T08:30:00',
-                        totalOrders: 0,
-                        totalSpent: 0
-                    },
-                    {
-                        id: '2',
-                        name: 'Cashier User',
-                        email: 'cashier@samytrends.com',
-                        phone: '+91 98765 00002',
-                        role: 'cashier',
-                        address: '456 Cashier Avenue, Mumbai',
-                        status: 'active',
-                        createdAt: '2026-01-05T10:00:00',
-                        lastLogin: '2026-02-07T09:00:00',
-                        totalOrders: 0,
-                        totalSpent: 0
-                    },
-                    {
-                        id: '3',
-                        name: 'Rahul Sharma',
-                        email: 'rahul@example.com',
-                        phone: '+91 98765 43210',
-                        role: 'user',
-                        address: '123 MG Road, Bangalore, Karnataka 560001',
-                        status: 'active',
-                        createdAt: '2026-01-15T14:30:00',
-                        lastLogin: '2026-02-07T08:30:00',
-                        totalOrders: 12,
-                        totalSpent: 45680
-                    },
-                    {
-                        id: '4',
-                        name: 'Priya Patel',
-                        email: 'priya@example.com',
-                        phone: '+91 98765 43211',
-                        role: 'user',
-                        address: '456 Park Street, Mumbai, Maharashtra 400001',
-                        status: 'active',
-                        createdAt: '2026-01-20T16:45:00',
-                        lastLogin: '2026-02-06T19:20:00',
-                        totalOrders: 8,
-                        totalSpent: 32150
-                    },
-                    {
-                        id: '5',
-                        name: 'Amit Kumar',
-                        email: 'amit@example.com',
-                        phone: '+91 98765 43212',
-                        role: 'user',
-                        address: '789 Nehru Place, Delhi, Delhi 110019',
-                        status: 'inactive',
-                        createdAt: '2026-02-01T11:20:00',
-                        lastLogin: '2026-02-05T10:15:00',
-                        totalOrders: 3,
-                        totalSpent: 12450
-                    }
-                ]);
+                setUsers([]);
             }
-            setLoading(false);
-        });
+            checkDone();
+        }, () => checkDone());
 
-        return () => unsubscribe();
+        const unsub2 = onValue(ref(database, 'orders'), (snapshot) => {
+            const data = snapshot.val();
+            setOrders(data ? Object.entries(data).map(([id, o]) => ({ id, ...o })) : []);
+            checkDone();
+        }, () => checkDone());
+
+        return () => { unsub1(); unsub2(); };
     }, []);
 
-    const filteredUsers = users.filter(user => {
+    // Compute per-user order stats from real orders
+    const userOrderStats = useMemo(() => {
+        const map = {};
+        orders.forEach(o => {
+            const uid = o.userId;
+            if (!uid) return;
+            if (!map[uid]) map[uid] = { totalOrders: 0, totalSpent: 0 };
+            map[uid].totalOrders += 1;
+            map[uid].totalSpent += (o.totalAmount || o.total || o.amount || 0);
+        });
+        return map;
+    }, [orders]);
+
+    // Enrich users with computed order stats
+    const enrichedUsers = useMemo(() =>
+        users.map(u => ({
+            ...u,
+            totalOrders: userOrderStats[u.id]?.totalOrders || 0,
+            totalSpent: userOrderStats[u.id]?.totalSpent || 0
+        })),
+        [users, userOrderStats]
+    );
+
+    const filteredUsers = enrichedUsers.filter(user => {
         const matchesSearch =
-            user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            user.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            (user.name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+            (user.email || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
             (user.phone && user.phone.includes(searchQuery));
         const matchesRole = roleFilter === 'all' || user.role === roleFilter;
         return matchesSearch && matchesRole;
@@ -180,11 +145,12 @@ const Users = () => {
         }
     };
 
+    const activeUsers = enrichedUsers.filter(u => u.status !== 'inactive').length;
     const stats = [
-        { label: 'Total Users', value: users.length, color: 'blue' },
-        { label: 'Admins', value: users.filter(u => u.role === 'admin').length, color: 'red' },
-        { label: 'Cashiers', value: users.filter(u => u.role === 'cashier').length, color: 'orange' },
-        { label: 'Customers', value: users.filter(u => u.role === 'user').length, color: 'green' }
+        { label: 'Total Users', value: enrichedUsers.length, color: 'blue' },
+        { label: 'Active', value: activeUsers, color: 'green' },
+        { label: 'Admins', value: enrichedUsers.filter(u => u.role === 'admin').length, color: 'red' },
+        { label: 'Customers', value: enrichedUsers.filter(u => u.role === 'user').length, color: 'orange' }
     ];
 
     return (

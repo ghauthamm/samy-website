@@ -1,90 +1,216 @@
-import { useState } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import {
     FiTrendingUp, FiTrendingDown, FiDollarSign, FiShoppingCart,
     FiUsers, FiPackage, FiCalendar
 } from 'react-icons/fi';
 import {
-    LineChart, Line, BarChart, Bar, AreaChart, Area, PieChart, Pie, Cell,
-    XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend
+    BarChart, Bar, AreaChart, Area, PieChart, Pie, Cell,
+    XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
 } from 'recharts';
+import { ref, onValue } from 'firebase/database';
+import { database } from '../../config/firebase';
 import './Analytics.css';
+
+const CAT_COLORS = {
+    'Electronics': '#dc2626', 'Clothing': '#3b82f6', 'Accessories': '#22c55e',
+    'Sports': '#f59e0b', 'Home & Living': '#8b5cf6', 'Beauty': '#ec4899',
+    'Footwear': '#14b8a6', 'Other': '#6b7280'
+};
+const COLOR_LIST = Object.values(CAT_COLORS);
 
 const Analytics = () => {
     const [period, setPeriod] = useState('7days');
+    const [orders, setOrders] = useState([]);
+    const [products, setProducts] = useState([]);
+    const [loading, setLoading] = useState(true);
 
-    const salesTrend = [
-        { date: 'Feb 1', revenue: 12000, orders: 45, customers: 38 },
-        { date: 'Feb 2', revenue: 15000, orders: 52, customers: 44 },
-        { date: 'Feb 3', revenue: 13500, orders: 48, customers: 41 },
-        { date: 'Feb 4', revenue: 18000, orders: 65, customers: 55 },
-        { date: 'Feb 5', revenue: 16500, orders: 58, customers: 49 },
-        { date: 'Feb 6', revenue: 20000, orders: 72, customers: 61 },
-        { date: 'Feb 7', revenue: 22000, orders: 78, customers: 66 }
-    ];
+    useEffect(() => {
+        let loaded = 0;
+        const checkDone = () => { loaded++; if (loaded >= 2) setLoading(false); };
 
-    const categoryPerformance = [
-        { category: 'Electronics', revenue: 45000, orders: 234, growth: 23 },
-        { category: 'Clothing', revenue: 38000, orders: 312, growth: 18 },
-        { category: 'Accessories', revenue: 28000, orders: 189, growth: 15 },
-        { category: 'Sports', revenue: 22000, orders: 156, growth: 12 },
-        { category: 'Home & Living', revenue: 18000, orders: 98, growth: 8 },
-        { category: 'Beauty', revenue: 15000, orders: 145, growth: 5 }
-    ];
+        const unsub1 = onValue(ref(database, 'orders'), (snap) => {
+            const data = snap.val();
+            setOrders(data ? Object.entries(data).map(([id, o]) => ({ id, ...o })) : []);
+            checkDone();
+        }, () => checkDone());
 
-    const revenueByCategory = [
-        { name: 'Electronics', value: 35, color: '#dc2626' },
-        { name: 'Clothing', value: 28, color: '#3b82f6' },
-        { name: 'Accessories', value: 18, color: '#22c55e' },
-        { name: 'Sports', value: 12, color: '#f59e0b' },
-        { name: 'Others', value: 7, color: '#a855f7' }
-    ];
+        const unsub2 = onValue(ref(database, 'products'), (snap) => {
+            const data = snap.val();
+            setProducts(data ? Object.entries(data).map(([id, p]) => ({ id, ...p })) : []);
+            checkDone();
+        }, () => checkDone());
 
-    const hourlyTraffic = [
-        { hour: '12 AM', visitors: 45 },
-        { hour: '3 AM', visitors: 20 },
-        { hour: '6 AM', visitors: 35 },
-        { hour: '9 AM', visitors: 120 },
-        { hour: '12 PM', visitors: 180 },
-        { hour: '3 PM', visitors: 210 },
-        { hour: '6 PM', visitors: 250 },
-        { hour: '9 PM', visitors: 195 }
-    ];
+        return () => { unsub1(); unsub2(); };
+    }, []);
+
+    // Period cutoff date
+    const periodStart = useMemo(() => {
+        const now = new Date();
+        const days = { '7days': 7, '30days': 30, '90days': 90, 'year': 365 };
+        return new Date(now.getTime() - (days[period] || 7) * 86400000);
+    }, [period]);
+
+    // Filtered orders for selected period
+    const filteredOrders = useMemo(() => {
+        return orders.filter(o => {
+            const d = new Date(o.createdAt || o.date || 0);
+            return d >= periodStart;
+        });
+    }, [orders, periodStart]);
+
+    // Previous period orders (for % change calculation)
+    const prevOrders = useMemo(() => {
+        const days = { '7days': 7, '30days': 30, '90days': 90, 'year': 365 };
+        const span = (days[period] || 7) * 86400000;
+        const prevStart = new Date(periodStart.getTime() - span);
+        return orders.filter(o => {
+            const d = new Date(o.createdAt || o.date || 0);
+            return d >= prevStart && d < periodStart;
+        });
+    }, [orders, periodStart, period]);
+
+    const getOrderTotal = (o) => o.totalAmount || o.total || o.amount || 0;
+
+    // Stats
+    const totalRevenue = filteredOrders.reduce((s, o) => s + getOrderTotal(o), 0);
+    const prevRevenue = prevOrders.reduce((s, o) => s + getOrderTotal(o), 0);
+    const revenueChange = prevRevenue > 0 ? (((totalRevenue - prevRevenue) / prevRevenue) * 100).toFixed(1) : totalRevenue > 0 ? '+100' : '0';
+
+    const totalOrderCount = filteredOrders.length;
+    const prevOrderCount = prevOrders.length;
+    const orderChange = prevOrderCount > 0 ? (((totalOrderCount - prevOrderCount) / prevOrderCount) * 100).toFixed(1) : totalOrderCount > 0 ? '+100' : '0';
+
+    const uniqueCustomers = new Set(filteredOrders.map(o => o.userId || o.customerDetails?.email || o.customer?.email || 'anon')).size;
+    const prevCustomers = new Set(prevOrders.map(o => o.userId || o.customerDetails?.email || o.customer?.email || 'anon')).size;
+    const customerChange = prevCustomers > 0 ? (((uniqueCustomers - prevCustomers) / prevCustomers) * 100).toFixed(1) : uniqueCustomers > 0 ? '+100' : '0';
+
+    const productsSold = filteredOrders.reduce((s, o) => s + (o.items ? o.items.reduce((q, i) => q + (i.quantity || 1), 0) : 0), 0);
+    const prevProductsSold = prevOrders.reduce((s, o) => s + (o.items ? o.items.reduce((q, i) => q + (i.quantity || 1), 0) : 0), 0);
+    const soldChange = prevProductsSold > 0 ? (((productsSold - prevProductsSold) / prevProductsSold) * 100).toFixed(1) : productsSold > 0 ? '+100' : '0';
+
+    const fmt = (v) => `${parseFloat(v) >= 0 ? '+' : ''}${v}%`;
 
     const stats = [
-        {
-            title: 'Total Revenue',
-            value: '₹2,45,890',
-            change: '+12.5%',
-            trend: 'up',
-            icon: FiDollarSign,
-            color: 'green'
-        },
-        {
-            title: 'Total Orders',
-            value: '1,284',
-            change: '+8.2%',
-            trend: 'up',
-            icon: FiShoppingCart,
-            color: 'blue'
-        },
-        {
-            title: 'Active Customers',
-            value: '3,421',
-            change: '+15.3%',
-            trend: 'up',
-            icon: FiUsers,
-            color: 'purple'
-        },
-        {
-            title: 'Products Sold',
-            value: '5,892',
-            change: '-3.1%',
-            trend: 'down',
-            icon: FiPackage,
-            color: 'orange'
-        }
+        { title: 'Total Revenue', value: `₹${totalRevenue.toLocaleString('en-IN')}`, change: fmt(revenueChange), trend: parseFloat(revenueChange) >= 0 ? 'up' : 'down', icon: FiDollarSign, color: 'green' },
+        { title: 'Total Orders', value: totalOrderCount.toLocaleString(), change: fmt(orderChange), trend: parseFloat(orderChange) >= 0 ? 'up' : 'down', icon: FiShoppingCart, color: 'blue' },
+        { title: 'Customers', value: uniqueCustomers.toLocaleString(), change: fmt(customerChange), trend: parseFloat(customerChange) >= 0 ? 'up' : 'down', icon: FiUsers, color: 'purple' },
+        { title: 'Products Sold', value: productsSold.toLocaleString(), change: fmt(soldChange), trend: parseFloat(soldChange) >= 0 ? 'up' : 'down', icon: FiPackage, color: 'orange' },
     ];
+
+    // Sales trend - group by date
+    const salesTrend = useMemo(() => {
+        const map = {};
+        const days = { '7days': 7, '30days': 30, '90days': 90, 'year': 365 };
+        const span = days[period] || 7;
+        const now = new Date();
+
+        // Pre-fill dates
+        for (let i = span - 1; i >= 0; i--) {
+            const d = new Date(now.getTime() - i * 86400000);
+            const key = d.toISOString().split('T')[0];
+            const label = span <= 7
+                ? d.toLocaleDateString('en-IN', { month: 'short', day: 'numeric' })
+                : span <= 30
+                    ? d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })
+                    : d.toLocaleDateString('en-IN', { month: 'short', day: 'numeric' });
+            map[key] = { date: label, revenue: 0, orders: 0 };
+        }
+
+        filteredOrders.forEach(o => {
+            const d = new Date(o.createdAt || o.date || 0);
+            const key = d.toISOString().split('T')[0];
+            if (map[key]) {
+                map[key].revenue += getOrderTotal(o);
+                map[key].orders += 1;
+            }
+        });
+
+        const data = Object.values(map);
+        // For large spans, bucket into weeks or months
+        if (span > 30) {
+            const bucketed = [];
+            const bucketSize = span > 90 ? 30 : 7;
+            for (let i = 0; i < data.length; i += bucketSize) {
+                const chunk = data.slice(i, i + bucketSize);
+                bucketed.push({
+                    date: chunk[0].date,
+                    revenue: chunk.reduce((s, c) => s + c.revenue, 0),
+                    orders: chunk.reduce((s, c) => s + c.orders, 0),
+                });
+            }
+            return bucketed;
+        }
+        return data;
+    }, [filteredOrders, period]);
+
+    // Product category lookup
+    const productCatMap = useMemo(() => {
+        const m = {};
+        products.forEach(p => { m[p.id] = p.category || 'Other'; m[p.name?.toLowerCase()] = p.category || 'Other'; });
+        return m;
+    }, [products]);
+
+    const getItemCategory = (item) => {
+        if (item.category) return item.category;
+        if (item.productId && productCatMap[item.productId]) return productCatMap[item.productId];
+        if (item.name && productCatMap[item.name.toLowerCase()]) return productCatMap[item.name.toLowerCase()];
+        return 'Other';
+    };
+
+    // Category performance (current + previous for growth)
+    const categoryPerformance = useMemo(() => {
+        const curr = {};
+        filteredOrders.forEach(o => {
+            (o.items || []).forEach(i => {
+                const cat = getItemCategory(i);
+                if (!curr[cat]) curr[cat] = { revenue: 0, orders: 0 };
+                curr[cat].revenue += (i.price || 0) * (i.quantity || 1);
+                curr[cat].orders += 1;
+            });
+        });
+        const prev = {};
+        prevOrders.forEach(o => {
+            (o.items || []).forEach(i => {
+                const cat = getItemCategory(i);
+                if (!prev[cat]) prev[cat] = { revenue: 0, orders: 0 };
+                prev[cat].revenue += (i.price || 0) * (i.quantity || 1);
+            });
+        });
+        return Object.entries(curr)
+            .map(([category, d]) => {
+                const prevRev = prev[category]?.revenue || 0;
+                const growth = prevRev > 0 ? Math.round(((d.revenue - prevRev) / prevRev) * 100) : d.revenue > 0 ? 100 : 0;
+                return { category, revenue: d.revenue, orders: d.orders, growth };
+            })
+            .sort((a, b) => b.revenue - a.revenue);
+    }, [filteredOrders, prevOrders, productCatMap]);
+
+    // Revenue by category for pie chart
+    const revenueByCategory = useMemo(() => {
+        const totalCatRevenue = categoryPerformance.reduce((s, c) => s + c.revenue, 0);
+        if (totalCatRevenue === 0) return [];
+        return categoryPerformance.map((c, i) => ({
+            name: c.category,
+            value: Math.round((c.revenue / totalCatRevenue) * 100),
+            color: CAT_COLORS[c.category] || COLOR_LIST[i % COLOR_LIST.length]
+        }));
+    }, [categoryPerformance]);
+
+    // Hourly order distribution
+    const hourlyTraffic = useMemo(() => {
+        const hours = Array.from({ length: 8 }, (_, i) => ({
+            hour: ['12 AM', '3 AM', '6 AM', '9 AM', '12 PM', '3 PM', '6 PM', '9 PM'][i],
+            bucket: i * 3,
+            orders: 0
+        }));
+        filteredOrders.forEach(o => {
+            const h = new Date(o.createdAt || o.date || 0).getHours();
+            const idx = Math.min(Math.floor(h / 3), 7);
+            hours[idx].orders += 1;
+        });
+        return hours;
+    }, [filteredOrders]);
 
     const CustomTooltip = ({ active, payload, label }) => {
         if (active && payload && payload.length) {
@@ -101,6 +227,19 @@ const Analytics = () => {
         }
         return null;
     };
+
+    if (loading) {
+        return (
+            <div className="admin-analytics">
+                <div className="analytics-loading">
+                    <div className="skeleton-stats-row">
+                        {[1, 2, 3, 4].map(i => <div key={i} className="skeleton-card skeleton"></div>)}
+                    </div>
+                    <div className="skeleton-chart skeleton"></div>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="admin-analytics">
@@ -216,37 +355,43 @@ const Analytics = () => {
                         <h3>Revenue by Category</h3>
                     </div>
                     <div className="chart-body pie-body">
-                        <ResponsiveContainer width="100%" height={250}>
-                            <PieChart>
-                                <Pie
-                                    data={revenueByCategory}
-                                    cx="50%"
-                                    cy="50%"
-                                    innerRadius={60}
-                                    outerRadius={90}
-                                    paddingAngle={5}
-                                    dataKey="value"
-                                >
-                                    {revenueByCategory.map((entry, index) => (
-                                        <Cell key={`cell-${index}`} fill={entry.color} />
+                        {revenueByCategory.length > 0 ? (
+                            <>
+                                <ResponsiveContainer width="100%" height={250}>
+                                    <PieChart>
+                                        <Pie
+                                            data={revenueByCategory}
+                                            cx="50%"
+                                            cy="50%"
+                                            innerRadius={60}
+                                            outerRadius={90}
+                                            paddingAngle={5}
+                                            dataKey="value"
+                                        >
+                                            {revenueByCategory.map((entry, index) => (
+                                                <Cell key={`cell-${index}`} fill={entry.color} />
+                                            ))}
+                                        </Pie>
+                                        <Tooltip />
+                                    </PieChart>
+                                </ResponsiveContainer>
+                                <div className="pie-legend">
+                                    {revenueByCategory.map((item) => (
+                                        <div key={item.name} className="pie-legend-item">
+                                            <span className="pie-dot" style={{ background: item.color }}></span>
+                                            <span className="pie-label">{item.name}</span>
+                                            <span className="pie-value">{item.value}%</span>
+                                        </div>
                                     ))}
-                                </Pie>
-                                <Tooltip />
-                            </PieChart>
-                        </ResponsiveContainer>
-                        <div className="pie-legend">
-                            {revenueByCategory.map((item) => (
-                                <div key={item.name} className="pie-legend-item">
-                                    <span className="pie-dot" style={{ background: item.color }}></span>
-                                    <span className="pie-label">{item.name}</span>
-                                    <span className="pie-value">{item.value}%</span>
                                 </div>
-                            ))}
-                        </div>
+                            </>
+                        ) : (
+                            <p className="no-data-text">No category data for this period</p>
+                        )}
                     </div>
                 </motion.div>
 
-                {/* Hourly Traffic */}
+                {/* Hourly Order Pattern */}
                 <motion.div
                     className="chart-card"
                     initial={{ opacity: 0, y: 20 }}
@@ -254,7 +399,7 @@ const Analytics = () => {
                     transition={{ delay: 0.4 }}
                 >
                     <div className="chart-header">
-                        <h3>Hourly Traffic Pattern</h3>
+                        <h3>Orders by Time of Day</h3>
                     </div>
                     <div className="chart-body">
                         <ResponsiveContainer width="100%" height={250}>
@@ -263,7 +408,7 @@ const Analytics = () => {
                                 <XAxis dataKey="hour" stroke="#9ca3af" fontSize={11} />
                                 <YAxis stroke="#9ca3af" fontSize={12} />
                                 <Tooltip content={<CustomTooltip />} />
-                                <Bar dataKey="visitors" fill="#a855f7" radius={[8, 8, 0, 0]} />
+                                <Bar dataKey="orders" fill="#a855f7" radius={[8, 8, 0, 0]} />
                             </BarChart>
                         </ResponsiveContainer>
                     </div>
@@ -280,36 +425,40 @@ const Analytics = () => {
                         <h3>Category Performance</h3>
                     </div>
                     <div className="chart-body">
-                        <table className="performance-table">
-                            <thead>
-                                <tr>
-                                    <th>Category</th>
-                                    <th>Revenue</th>
-                                    <th>Orders</th>
-                                    <th>Growth</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {categoryPerformance.map((cat, index) => (
-                                    <tr key={cat.category}>
-                                        <td>
-                                            <div className="category-name">
-                                                <span className="category-rank">#{index + 1}</span>
-                                                {cat.category}
-                                            </div>
-                                        </td>
-                                        <td className="revenue">₹{cat.revenue.toLocaleString()}</td>
-                                        <td>{cat.orders}</td>
-                                        <td>
-                                            <span className="growth-badge positive">
-                                                <FiTrendingUp />
-                                                +{cat.growth}%
-                                            </span>
-                                        </td>
+                        {categoryPerformance.length > 0 ? (
+                            <table className="performance-table">
+                                <thead>
+                                    <tr>
+                                        <th>Category</th>
+                                        <th>Revenue</th>
+                                        <th>Orders</th>
+                                        <th>Growth</th>
                                     </tr>
-                                ))}
-                            </tbody>
-                        </table>
+                                </thead>
+                                <tbody>
+                                    {categoryPerformance.map((cat, index) => (
+                                        <tr key={cat.category}>
+                                            <td>
+                                                <div className="category-name">
+                                                    <span className="category-rank">#{index + 1}</span>
+                                                    {cat.category}
+                                                </div>
+                                            </td>
+                                            <td className="revenue">₹{cat.revenue.toLocaleString('en-IN')}</td>
+                                            <td>{cat.orders}</td>
+                                            <td>
+                                                <span className={`growth-badge ${cat.growth >= 0 ? 'positive' : 'negative'}`}>
+                                                    {cat.growth >= 0 ? <FiTrendingUp /> : <FiTrendingDown />}
+                                                    {cat.growth >= 0 ? '+' : ''}{cat.growth}%
+                                                </span>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        ) : (
+                            <p className="no-data-text">No orders in this period</p>
+                        )}
                     </div>
                 </motion.div>
             </div>
